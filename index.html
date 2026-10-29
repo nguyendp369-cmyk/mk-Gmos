@@ -1,162 +1,755 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lấy Mật Khẩu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lấy Mật Khẩu GMOS</title>
+    <meta name="description" content="Công cụ cấp mật khẩu tự động theo khung giờ chuẩn GMT+7 (GMOS Authenticator).">
+    <meta name="theme-color" content="#131314">
+
+    <!-- GitHub Pages Canonical & Open Graph Metadata -->
+    <link rel="canonical" href="https://nguyendp369-cmyk.github.io/mk-Gmos/">
+    <meta property="og:title" content="Lấy Mật Khẩu GMOS">
+    <meta property="og:description" content="Công cụ lấy mật khẩu tự động theo ca 2 giờ chuẩn GMT+7.">
+    <meta property="og:url" content="https://nguyendp369-cmyk.github.io/mk-Gmos/">
+    <meta property="og:type" content="website">
+
+    <!-- Inline SVG Favicon (Zero 404 on GitHub Pages) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238ab4f8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' fill='%231e1f20'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        };
+
+        // Load saved theme preference immediately to prevent flash
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('gmos_theme');
+                if (savedTheme === 'light') {
+                    document.documentElement.classList.remove('dark');
+                } else {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <style>
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+            font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+            -webkit-tap-highlight-color: transparent;
         }
-        .card {
-            background: #1e1e1e;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            width: 340px;
-            text-align: center;
-            border: 1px solid #333;
+        /* Google Authenticator Circular Progress Ring */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.4s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
         }
-        h3 {
-            margin-top: 0;
-            color: #ffffff;
+        /* Custom slim scrollbar for schedule list */
+        .thin-scroll::-webkit-scrollbar {
+            width: 4px;
         }
-        button {
-            background: #2563eb;
-            color: #fff;
-            border: none;
-            padding: 12px 20px;
-            font-size: 15px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.2s;
+        .thin-scroll::-webkit-scrollbar-track {
+            background: transparent;
         }
-        button:hover {
-            background: #1d4ed8;
-        }
-        button:active {
-            transform: scale(0.98);
-        }
-        .output-box {
-            margin-top: 20px;
-            background: #262626;
-            padding: 14px;
-            border-radius: 8px;
-            text-align: left;
-            display: none;
-            border: 1px solid #404040;
-        }
-        .label {
-            font-size: 12px;
-            color: #9ca3af;
-            margin-bottom: 4px;
-        }
-        .pwd-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #171717;
-            padding: 10px 12px;
-            border-radius: 6px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            border: 1px dashed #4ade80;
-        }
-        .pwd {
-            font-size: 20px;
-            font-weight: bold;
-            color: #4ade80;
-            font-family: monospace;
-            letter-spacing: 1px;
-        }
-        .copy-badge {
-            font-size: 11px;
-            background: #374151;
-            color: #d1d5db;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-        .hash-str {
-            font-size: 11px;
-            color: #a3a3a3;
-            font-family: monospace;
-            word-break: break-all;
+        .thin-scroll::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 9999px;
         }
     </style>
 </head>
-<body>
+<body class="bg-[#f8fafc] dark:bg-[#131314] text-[#1f1f1f] dark:text-[#e3e3e3] min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-200 selection:bg-blue-500/20 selection:text-blue-400">
 
-<div class="card">
-    <h3>Tool Lấy Mật Khẩu</h3>
-    <button onclick="generatePassword()">Bấm để lấy mật khẩu</button>
-    
-    <div id="result" class="output-box">
-        <div class="label">Mật khẩu (chạm vào khung để copy):</div>
-        <div class="pwd-container" onclick="copyPass()">
-            <span class="pwd" id="pwdText"></span>
-            <span class="copy-badge" id="copyStatus">Copy</span>
+    <!-- ULTRA-MINIMALIST MAIN CARD (~390px) -->
+    <main class="w-full max-w-[390px]">
+        <div class="bg-white dark:bg-[#1e1f20] rounded-2xl border border-gray-200/90 dark:border-[#2d2e30] shadow-xl shadow-black/5 dark:shadow-black/40 overflow-hidden transition-all duration-200">
+
+            <!-- 1. Card Header: Clean Title, Active Slot Pill & Theme Toggle -->
+            <div class="px-5 pt-5 pb-4 flex items-center justify-between border-b border-gray-100 dark:border-[#282a2c]">
+                <div class="flex items-center gap-3">
+                    <!-- Minimal Shield Icon -->
+                    <div class="w-9 h-9 rounded-xl bg-[#e8f0fe] dark:bg-[#8ab4f8]/10 border border-[#d2e3fc] dark:border-[#8ab4f8]/20 flex items-center justify-center text-[#0b57d0] dark:text-[#8ab4f8] shrink-0">
+                        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <path d="m9 12 2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-[15px] font-semibold tracking-tight text-gray-900 dark:text-[#e3e3e3] leading-snug">
+                            Lấy Mật Khẩu GMOS
+                        </h1>
+                        <div class="flex items-center gap-1.5 mt-0.5 text-[11px] font-medium text-gray-500 dark:text-[#9aa0a6]">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#4ade80]"></span>
+                            <span id="slotHeaderText">Ca --:00 – --:00</span>
+                            <span>•</span>
+                            <span id="liveClock" class="font-mono">--:--:--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subtle Theme Toggle Button -->
+                <button onclick="toggleTheme()" class="p-2 rounded-xl text-gray-500 hover:text-gray-800 dark:text-[#9aa0a6] dark:hover:text-[#e3e3e3] hover:bg-gray-100 dark:hover:bg-[#282a2c] transition-colors" title="Đổi giao diện Sáng / Tối" aria-label="Đổi giao diện Sáng / Tối">
+                    <!-- Sun Icon (Dark mode) -->
+                    <svg class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="4"/>
+                        <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+                    </svg>
+                    <!-- Moon Icon (Light mode) -->
+                    <svg class="w-4 h-4 block dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 2. Primary Token Body (Simple, Focused, Uncluttered) -->
+            <div class="p-5">
+                <!-- Label Row -->
+                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-[#9aa0a6] mb-2">
+                    <span id="activeModeLabel">Mật khẩu hiện tại (chạm để chép)</span>
+                    <span id="copyStatus" class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#282a2c] text-gray-600 dark:text-[#c4c7c5] transition-colors">
+                        Copy
+                    </span>
+                </div>
+
+                <!-- Google Authenticator-style Token Box -->
+                <div onclick="copyPass()" role="button" tabindex="0" aria-label="Chạm để sao chép mật khẩu"
+                     class="group relative flex items-center justify-between px-4 py-3.5 rounded-xl bg-[#f8fafc] dark:bg-[#131314] hover:bg-[#eff6ff]/60 dark:hover:bg-[#18191b] border border-gray-200 dark:border-[#2d2e30] hover:border-[#0b57d0]/50 dark:hover:border-[#8ab4f8]/50 cursor-pointer transition-all active:scale-[0.99]">
+                    
+                    <!-- Password String -->
+                    <div class="flex flex-col">
+                        <span id="pwdText" class="font-mono text-[22px] sm:text-2xl font-bold tracking-wider text-[#0b57d0] dark:text-[#4ade80] select-all">
+                            @PK--------@
+                        </span>
+                        <span id="dateSubtext" class="text-[11px] text-gray-400 dark:text-[#757b80] mt-0.5 font-mono">
+                            --/--/----
+                        </span>
+                    </div>
+
+                    <!-- Circular Countdown Ring (Google Authenticator Inspired) -->
+                    <div class="flex items-center gap-2.5 pl-3 border-l border-gray-200/80 dark:border-[#282a2c]" title="Thời gian còn lại của ca hiện tại">
+                        <div class="text-right">
+                            <div class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-[#757b80] font-medium">Còn lại</div>
+                            <div id="countdownText" class="text-xs font-mono font-semibold text-gray-700 dark:text-[#c4c7c5]">--:--</div>
+                        </div>
+                        <div class="relative w-8 h-8 flex items-center justify-center shrink-0">
+                            <svg class="w-8 h-8" viewBox="0 0 36 36">
+                                <circle class="text-gray-200 dark:text-[#282a2c]" stroke="currentColor" stroke-width="3.5" fill="transparent" r="14" cx="18" cy="18"/>
+                                <circle id="countdownCircle" class="progress-ring__circle text-[#0b57d0] dark:text-[#8ab4f8]" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" fill="transparent" r="14" cx="18" cy="18" stroke-dasharray="87.96" stroke-dashoffset="0"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Primary Button -->
+                <button onclick="copyPass()" id="mainActionBtn"
+                        class="mt-3.5 w-full py-3 px-4 rounded-xl font-semibold text-sm bg-[#0b57d0] hover:bg-[#0948b0] dark:bg-[#8ab4f8] dark:hover:bg-[#a3c5fa] text-white dark:text-[#062e6f] shadow-sm transition-all active:scale-[0.985] flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                    </svg>
+                    <span id="mainBtnText">Sao chép mật khẩu</span>
+                </button>
+            </div>
+
+            <!-- 3. Subtle Expandable Drawer Toggle (Collapsed by Default for Maximum Simplicity) -->
+            <div class="border-t border-gray-100 dark:border-[#282a2c]">
+                <button onclick="toggleDrawer()" id="drawerBtn" aria-expanded="false"
+                        class="w-full px-5 py-2.5 flex items-center justify-between text-xs font-medium text-gray-500 hover:text-gray-800 dark:text-[#9aa0a6] dark:hover:text-[#e3e3e3] hover:bg-gray-50 dark:hover:bg-[#252628] transition-colors">
+                    <span>Tùy chọn nâng cao (Đổi ca, Lịch ngày, Hash)</span>
+                    <svg id="drawerIcon" class="w-4 h-4 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                </button>
+
+                <!-- Collapsible Drawer Content -->
+                <div id="drawerPanel" class="hidden border-t border-gray-100 dark:border-[#282a2c] bg-[#f8fafc]/60 dark:bg-[#161718]">
+                    
+                    <!-- Compact Pill Tabs -->
+                    <div class="px-4 pt-3 pb-2 flex items-center gap-1 border-b border-gray-200/60 dark:border-[#282a2c]">
+                        <button onclick="switchTab('slots')" id="tabBtn-slots"
+                                class="flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-colors bg-[#e8f0fe] dark:bg-[#8ab4f8]/15 text-[#0b57d0] dark:text-[#8ab4f8]">
+                            Đổi ca &amp; Lịch
+                        </button>
+                        <button onclick="switchTab('hash')" id="tabBtn-hash"
+                                class="flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-colors text-gray-500 dark:text-[#9aa0a6] hover:bg-gray-200/50 dark:hover:bg-[#282a2c]">
+                            Chuỗi Hash
+                        </button>
+                        <button onclick="switchTab('verify')" id="tabBtn-verify"
+                                class="flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-colors text-gray-500 dark:text-[#9aa0a6] hover:bg-gray-200/50 dark:hover:bg-[#282a2c]">
+                            Kiểm tra
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: SHIFT SWITCHER & DAILY SCHEDULE -->
+                    <div id="tabPanel-slots" class="p-4 space-y-3.5">
+                        <!-- Quick Shift Switcher (Previous / Current / Next) -->
+                        <div>
+                            <div class="text-[11px] font-medium text-gray-500 dark:text-[#9aa0a6] mb-1.5">
+                                Xem nhanh ca lân cận (dùng khi giao ca):
+                            </div>
+                            <div class="grid grid-cols-3 gap-1.5">
+                                <button onclick="selectShiftOffset(-2)" id="shiftBtn-prev"
+                                        class="p-2 rounded-lg border border-gray-200 dark:border-[#2d2e30] bg-white dark:bg-[#1e1f20] text-center hover:border-[#0b57d0] dark:hover:border-[#8ab4f8] transition-all">
+                                    <div class="text-[10px] text-gray-400 dark:text-[#9aa0a6]" id="prevShiftTime">Ca trước</div>
+                                    <div class="font-mono text-[11px] font-semibold text-gray-700 dark:text-[#e3e3e3] mt-0.5 truncate" id="prevShiftPwd">--</div>
+                                </button>
+
+                                <button onclick="selectShiftOffset(0)" id="shiftBtn-curr"
+                                        class="p-2 rounded-lg border border-[#0b57d0] dark:border-[#8ab4f8] bg-[#e8f0fe]/40 dark:bg-[#8ab4f8]/10 text-center transition-all">
+                                    <div class="text-[10px] text-[#0b57d0] dark:text-[#8ab4f8] font-medium" id="currShiftTime">Hiện tại</div>
+                                    <div class="font-mono text-[11px] font-bold text-[#0b57d0] dark:text-[#4ade80] mt-0.5 truncate" id="currShiftPwd">--</div>
+                                </button>
+
+                                <button onclick="selectShiftOffset(2)" id="shiftBtn-next"
+                                        class="p-2 rounded-lg border border-gray-200 dark:border-[#2d2e30] bg-white dark:bg-[#1e1f20] text-center hover:border-[#0b57d0] dark:hover:border-[#8ab4f8] transition-all">
+                                    <div class="text-[10px] text-gray-400 dark:text-[#9aa0a6]" id="nextShiftTime">Ca tiếp</div>
+                                    <div class="font-mono text-[11px] font-semibold text-gray-700 dark:text-[#e3e3e3] mt-0.5 truncate" id="nextShiftPwd">--</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 12-Slot Daily List -->
+                        <div class="pt-2 border-t border-gray-200/70 dark:border-[#282a2c]">
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <input type="date" id="scheduleDate" onchange="renderScheduleList()"
+                                       class="px-2 py-1 rounded-lg text-[11px] font-mono bg-white dark:bg-[#1e1f20] border border-gray-200 dark:border-[#2d2e30] text-gray-700 dark:text-[#e3e3e3] focus:outline-none focus:border-[#0b57d0] dark:focus:border-[#8ab4f8]">
+                                <button onclick="copyFullDaySchedule()"
+                                        class="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-[#1e1f20] hover:bg-gray-100 dark:hover:bg-[#282a2c] text-[#0b57d0] dark:text-[#8ab4f8] border border-gray-200 dark:border-[#2d2e30] transition-colors">
+                                    Chép cả 12 ca
+                                </button>
+                            </div>
+                            <div id="scheduleList" class="max-h-44 overflow-y-auto thin-scroll space-y-1 pr-1">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: HASH INSPECTOR -->
+                    <div id="tabPanel-hash" class="p-4 hidden space-y-3">
+                        <div>
+                            <div class="flex items-center justify-between text-[11px] text-gray-500 dark:text-[#9aa0a6] mb-1">
+                                <span>Chuỗi hash gốc (Raw Payload):</span>
+                                <button onclick="copyRawHash()" class="text-[#0b57d0] dark:text-[#8ab4f8] hover:underline font-medium">Copy</button>
+                            </div>
+                            <div id="hashText" class="p-2.5 rounded-lg bg-white dark:bg-[#1e1f20] border border-gray-200 dark:border-[#2d2e30] font-mono text-[11px] text-gray-600 dark:text-[#a3a3a3] break-all select-all">
+                                --
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between text-[11px] text-gray-500 dark:text-[#9aa0a6] mb-1">
+                                <span>SHA-256 (2 ký tự đầu làm Checksum):</span>
+                                <button onclick="copySha256()" class="text-[#0b57d0] dark:text-[#8ab4f8] hover:underline font-medium">Copy</button>
+                            </div>
+                            <div id="shaText" class="p-2.5 rounded-lg bg-white dark:bg-[#1e1f20] border border-gray-200 dark:border-[#2d2e30] font-mono text-[11px] text-gray-500 dark:text-[#8e918f] break-all select-all leading-relaxed">
+                                --
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: TOKEN VERIFIER & SHARE LINK -->
+                    <div id="tabPanel-verify" class="p-4 hidden space-y-3">
+                        <div>
+                            <label for="verifyInput" class="block text-[11px] font-medium text-gray-500 dark:text-[#9aa0a6] mb-1">
+                                Kiểm tra tính hợp lệ của mật khẩu:
+                            </label>
+                            <input type="text" id="verifyInput" oninput="verifyPasswordInput()" placeholder="Nhập mã @PK... để kiểm tra"
+                                   class="w-full px-3 py-2 rounded-lg font-mono text-xs bg-white dark:bg-[#1e1f20] border border-gray-200 dark:border-[#2d2e30] text-gray-800 dark:text-[#e3e3e3] focus:outline-none focus:border-[#0b57d0] dark:focus:border-[#8ab4f8]">
+                            <div id="verifyOutput" class="mt-2 text-[11px] text-gray-500 dark:text-[#9aa0a6]">
+                                Nhập mật khẩu gồm 12 ký tự (VD: @PK043010A5@).
+                            </div>
+                        </div>
+
+                        <div class="pt-2.5 border-t border-gray-200/70 dark:border-[#282a2c] flex items-center justify-between">
+                            <span class="text-[11px] text-gray-500 dark:text-[#9aa0a6] truncate mr-2">
+                                nguyendp369-cmyk.github.io/mk-Gmos
+                            </span>
+                            <button onclick="copyShareUrl()" class="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-white dark:bg-[#1e1f20] border border-gray-200 dark:border-[#2d2e30] text-[#0b57d0] dark:text-[#8ab4f8] hover:bg-gray-50 dark:hover:bg-[#282a2c]">
+                                Chép link web
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
-        <div class="label">Chuỗi hash:</div>
-        <div class="hash-str" id="hashText"></div>
+
+        <!-- Subtle Keyboard Hint below Card -->
+        <p class="mt-3 text-center text-[11px] text-gray-400 dark:text-[#5f6368]">
+            Mẹo: Bấm phím <kbd class="px-1.5 py-0.5 rounded bg-gray-200/70 dark:bg-[#1e1f20] text-gray-600 dark:text-[#9aa0a6] font-mono text-[10px]">Space</kbd> hoặc chạm vào khung mật khẩu để sao chép nhanh
+        </p>
+    </main>
+
+    <!-- Minimal Floating Toast -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-200 px-4 py-2 rounded-full bg-gray-900 dark:bg-[#e3e3e3] text-white dark:text-[#131314] text-xs font-medium shadow-lg flex items-center gap-2">
+        <svg class="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span id="toastMsg">Đã sao chép!</span>
     </div>
-</div>
 
-<script>
-const SECRET_SALT = "PHUONGMQV_GMOS_2026_MOS_AUTH";
+    <script>
+        // =========================================================================
+        // 1. CORE ALGORITHM (100% COMPATIBLE WITH ORIGINAL LOGIC + FALLBACK)
+        // =========================================================================
+        const SECRET_SALT = "PHUONGMQV_GMOS_2026_MOS_AUTH";
+        const SHARE_URL = "https://nguyendp369-cmyk.github.io/mk-Gmos/";
 
-function getSlotHour(hour) {
-    return hour - (hour % 2);
-}
+        function getSlotHour(hour) {
+            return hour - (hour % 2);
+        }
 
-function pad2(num) {
-    return String(num).padStart(2, '0');
-}
+        function pad2(num) {
+            return String(num).padStart(2, '0');
+        }
 
-async function generatePassword() {
-    const now = new Date();
-    const vnTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}));
+        // Pure-JS SHA-256 fallback in case Web Crypto API is restricted in local file:// or embedded webviews
+        function sha256Fallback(ascii) {
+            function rightRotate(value, amount) {
+                return (value >>> amount) | (value << (32 - amount));
+            }
+            const mathPow = Math.pow;
+            const maxWord = mathPow(2, 32);
+            const lengthProperty = 'length';
+            let i, j;
+            let result = '';
+            const words = [];
+            const asciiBitLength = ascii[lengthProperty] * 8;
+            let hash = sha256Fallback.h = sha256Fallback.h || [];
+            const k = sha256Fallback.k = sha256Fallback.k || [];
+            let primeCounter = k[lengthProperty];
+            const isComposite = {};
+            for (let candidate = 2; primeCounter < 64; candidate++) {
+                if (!isComposite[candidate]) {
+                    for (i = 0; i < 313; i += candidate) {
+                        isComposite[i] = candidate;
+                    }
+                    hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
+                    k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+                }
+            }
+            ascii += '\x80';
+            while (ascii[lengthProperty] % 64 - 56) ascii += '\x00';
+            for (i = 0; i < ascii[lengthProperty]; i++) {
+                j = ascii.charCodeAt(i);
+                if (j >> 8) return '';
+                words[i >> 2] |= j << ((3 - i) % 4) * 8;
+            }
+            words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
+            words[words[lengthProperty]] = (asciiBitLength);
+            for (j = 0; j < words[lengthProperty];) {
+                const w = words.slice(j, j += 16);
+                const oldHash = hash;
+                hash = hash.slice(0, 8);
+                for (i = 0; i < 64; i++) {
+                    const i2 = i + j;
+                    const w15 = w[i - 15], w2 = w[i - 2];
+                    const a = hash[0], e = hash[4];
+                    const temp1 = hash[7]
+                        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+                        + ((e & hash[5]) ^ ((~e) & hash[6]))
+                        + k[i]
+                        + (w[i] = (i < 16) ? w[i] : (
+                            w[i - 16]
+                            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+                            + w[i - 7]
+                            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+                        ) | 0);
+                    const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+                        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+                    hash = [(temp1 + temp2) | 0].concat(hash);
+                    hash[4] = (hash[4] + temp1) | 0;
+                }
+                for (i = 0; i < 8; i++) {
+                    hash[i] = (hash[i] + oldHash[i]) | 0;
+                }
+            }
+            for (i = 0; i < 8; i++) {
+                for (j = 3; j + 1; j--) {
+                    const b = (hash[i] >> (j * 8)) & 255;
+                    result += ((b < 16) ? 0 : '') + b.toString(16);
+                }
+            }
+            return result.toUpperCase();
+        }
 
-    const year = vnTime.getFullYear();
-    const month = pad2(vnTime.getMonth() + 1);
-    const day = pad2(vnTime.getDate());
-    const slotH = pad2(getSlotHour(vnTime.getHours()));
+        async function computeSha256Upper(rawPayload) {
+            try {
+                if (window.crypto && window.crypto.subtle) {
+                    const msgBuffer = new TextEncoder().encode(rawPayload);
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+                }
+            } catch (e) {}
+            return sha256Fallback(rawPayload);
+        }
 
-    const rawPayload = `${year}-${month}-${day}-${slotH}-${SECRET_SALT}`;
+        async function buildSlotData(year, monthNum, dayNum, rawHour) {
+            const month = pad2(monthNum);
+            const day = pad2(dayNum);
+            const slotNum = getSlotHour(rawHour);
+            const slotH = pad2(slotNum);
+            const nextH = pad2((slotNum + 2) % 24);
 
-    const msgBuffer = new TextEncoder().encode(rawPayload);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const sha = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+            const rawPayload = `${year}-${month}-${day}-${slotH}-${SECRET_SALT}`;
+            const sha = await computeSha256Upper(rawPayload);
+            const checksum = sha.substring(0, 2);
+            const password = `@PK${slotH}${day}${month}${checksum}@`;
 
-    const checksum = sha.substring(0, 2);
-    const password = `@PK${slotH}${day}${month}${checksum}@`;
+            return {
+                year,
+                month,
+                day,
+                slotNum,
+                slotH,
+                nextH,
+                rawPayload,
+                sha,
+                checksum,
+                password
+            };
+        }
 
-    document.getElementById('pwdText').textContent = password;
-    document.getElementById('hashText').textContent = rawPayload;
-    document.getElementById('copyStatus').textContent = "Copy";
-    document.getElementById('copyStatus').style.background = "#374151";
-    document.getElementById('result').style.display = 'block';
-}
+        // =========================================================================
+        // 2. STATE & TIMEZONE HANDLING (Asia/Ho_Chi_Minh)
+        // =========================================================================
+        let activeData = null;
+        let shiftVariants = { prev: null, curr: null, next: null };
+        let selectedOffsetHours = 0; // 0 = current, -2 = prev, +2 = next
+        let lastSlotSignature = "";
+        let cachedDayList = [];
+        let toastTimer = null;
 
-function copyPass() {
-    const pwd = document.getElementById('pwdText').textContent;
-    navigator.clipboard.writeText(pwd).then(() => {
-        const badge = document.getElementById('copyStatus');
-        badge.textContent = "Đã chép!";
-        badge.style.background = "#16a34a";
-        badge.style.color = "#fff";
-    });
-}
-</script>
+        function getVnDate() {
+            const now = new Date();
+            return new Date(now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+        }
 
+        async function generatePassword(force = false) {
+            const vnTime = getVnDate();
+            const year = vnTime.getFullYear();
+            const monthNum = vnTime.getMonth() + 1;
+            const dayNum = vnTime.getDate();
+            const hours = vnTime.getHours();
+            const minutes = vnTime.getMinutes();
+            const seconds = vnTime.getSeconds();
+
+            // Live Clock in Header
+            document.getElementById('liveClock').textContent =
+                `${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
+
+            // Remaining seconds in current 2-hour window (7200s)
+            const slotNum = getSlotHour(hours);
+            const elapsed = ((hours - slotNum) * 3600) + (minutes * 60) + seconds;
+            const remaining = Math.max(0, 7200 - elapsed);
+            updateCountdownRing(remaining, 7200);
+
+            const sig = `${year}-${pad2(monthNum)}-${pad2(dayNum)}-${pad2(slotNum)}`;
+            if (force || sig !== lastSlotSignature) {
+                lastSlotSignature = sig;
+
+                const prevDate = new Date(vnTime.getTime() - 2 * 3600 * 1000);
+                const nextDate = new Date(vnTime.getTime() + 2 * 3600 * 1000);
+
+                shiftVariants.curr = await buildSlotData(year, monthNum, dayNum, hours);
+                shiftVariants.prev = await buildSlotData(prevDate.getFullYear(), prevDate.getMonth() + 1, prevDate.getDate(), prevDate.getHours());
+                shiftVariants.next = await buildSlotData(nextDate.getFullYear(), nextDate.getMonth() + 1, nextDate.getDate(), nextDate.getHours());
+
+                applySelectedShift();
+
+                const dateInput = document.getElementById('scheduleDate');
+                if (!dateInput.value) {
+                    dateInput.value = `${year}-${pad2(monthNum)}-${pad2(dayNum)}`;
+                }
+                await renderScheduleList();
+            }
+        }
+
+        function applySelectedShift() {
+            if (selectedOffsetHours === -2) {
+                activeData = shiftVariants.prev;
+                document.getElementById('activeModeLabel').textContent = `Mật khẩu ca trước (${activeData.slotH}:00 – ${activeData.nextH}:00)`;
+            } else if (selectedOffsetHours === 2) {
+                activeData = shiftVariants.next;
+                document.getElementById('activeModeLabel').textContent = `Mật khẩu ca tiếp (${activeData.slotH}:00 – ${activeData.nextH}:00)`;
+            } else {
+                activeData = shiftVariants.curr;
+                document.getElementById('activeModeLabel').textContent = 'Mật khẩu hiện tại (chạm để chép)';
+            }
+
+            if (!activeData) return;
+
+            // Update Primary Display
+            document.getElementById('pwdText').textContent = activeData.password;
+            document.getElementById('slotHeaderText').textContent = `Ca ${shiftVariants.curr.slotH}:00 – ${shiftVariants.curr.nextH}:00`;
+            document.getElementById('dateSubtext').textContent =
+                `Ngày ${activeData.day}/${activeData.month}/${activeData.year} • Khung ${activeData.slotH}h`;
+
+            // Update Hash Inspector
+            document.getElementById('hashText').textContent = activeData.rawPayload;
+            document.getElementById('shaText').innerHTML =
+                `<span class="text-[#0b57d0] dark:text-[#4ade80] font-bold underline">${activeData.checksum}</span>${activeData.sha.substring(2)}`;
+
+            // Update Quick Shift Pills inside Drawer
+            if (shiftVariants.prev && shiftVariants.curr && shiftVariants.next) {
+                document.getElementById('prevShiftTime').textContent = `Trước (${shiftVariants.prev.slotH}h)`;
+                document.getElementById('prevShiftPwd').textContent = shiftVariants.prev.password;
+
+                document.getElementById('currShiftTime').textContent = `Hiện tại (${shiftVariants.curr.slotH}h)`;
+                document.getElementById('currShiftPwd').textContent = shiftVariants.curr.password;
+
+                document.getElementById('nextShiftTime').textContent = `Tiếp (${shiftVariants.next.slotH}h)`;
+                document.getElementById('nextShiftPwd').textContent = shiftVariants.next.password;
+            }
+
+            const map = { '-2': 'prev', '0': 'curr', '2': 'next' };
+            ['prev', 'curr', 'next'].forEach(key => {
+                const btn = document.getElementById(`shiftBtn-${key}`);
+                const isSelected = map[String(selectedOffsetHours)] === key;
+                btn.className = isSelected
+                    ? 'p-2 rounded-lg border border-[#0b57d0] dark:border-[#8ab4f8] bg-[#e8f0fe]/50 dark:bg-[#8ab4f8]/15 text-center transition-all'
+                    : 'p-2 rounded-lg border border-gray-200 dark:border-[#2d2e30] bg-white dark:bg-[#1e1f20] text-center hover:border-[#0b57d0] dark:hover:border-[#8ab4f8] transition-all';
+            });
+        }
+
+        function selectShiftOffset(offset) {
+            selectedOffsetHours = offset;
+            applySelectedShift();
+            copyPass();
+        }
+
+        function updateCountdownRing(remaining, total) {
+            const m = Math.floor(remaining / 60);
+            const s = remaining % 60;
+            const h = Math.floor(m / 60);
+            const remM = m % 60;
+
+            document.getElementById('countdownText').textContent =
+                h > 0 ? `${h}h ${pad2(remM)}p` : `${pad2(remM)}:${pad2(s)}`;
+
+            const circumference = 87.96; // 2 * PI * 14
+            const ratio = remaining / total;
+            const circle = document.getElementById('countdownCircle');
+            circle.style.strokeDashoffset = circumference - (ratio * circumference);
+
+            if (remaining <= 300) {
+                circle.classList.remove('text-[#0b57d0]', 'dark:text-[#8ab4f8]');
+                circle.classList.add('text-amber-500', 'dark:text-amber-400');
+            } else {
+                circle.classList.add('text-[#0b57d0]', 'dark:text-[#8ab4f8]');
+                circle.classList.remove('text-amber-500', 'dark:text-amber-400');
+            }
+        }
+
+        // =========================================================================
+        // 3. DAILY SCHEDULE & VERIFIER (INSIDE DRAWER)
+        // =========================================================================
+        async function renderScheduleList() {
+            const val = document.getElementById('scheduleDate').value;
+            if (!val) return;
+            const [y, m, d] = val.split('-').map(Number);
+
+            const container = document.getElementById('scheduleList');
+            container.innerHTML = '';
+            cachedDayList = [];
+
+            const vn = getVnDate();
+            const isToday = vn.getFullYear() === y && (vn.getMonth() + 1) === m && vn.getDate() === d;
+            const currSlot = getSlotHour(vn.getHours());
+
+            for (let h = 0; h < 24; h += 2) {
+                const itemData = await buildSlotData(y, m, d, h);
+                cachedDayList.push(itemData);
+                const active = isToday && h === currSlot;
+
+                const row = document.createElement('div');
+                row.className = active
+                    ? 'flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#e8f0fe]/70 dark:bg-[#8ab4f8]/15 border border-[#0b57d0]/30 dark:border-[#8ab4f8]/30 cursor-pointer'
+                    : 'flex items-center justify-between px-3 py-1.5 rounded-lg bg-white dark:bg-[#1e1f20] hover:bg-gray-100 dark:hover:bg-[#282a2c] border border-gray-200/70 dark:border-[#2d2e30] cursor-pointer';
+
+                row.onclick = () => copyText(itemData.password, `Đã chép ca ${itemData.slotH}:00`);
+                row.innerHTML = `
+                    <span class="text-[11px] font-mono ${active ? 'font-semibold text-[#0b57d0] dark:text-[#8ab4f8]' : 'text-gray-500 dark:text-[#9aa0a6]'}">
+                        ${itemData.slotH}:00 – ${itemData.nextH}:00 ${active ? '• Hiện tại' : ''}
+                    </span>
+                    <span class="font-mono text-xs font-bold ${active ? 'text-[#0b57d0] dark:text-[#4ade80]' : 'text-gray-800 dark:text-[#e3e3e3]'}">
+                        ${itemData.password}
+                    </span>
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function copyFullDaySchedule() {
+            if (!cachedDayList.length) return;
+            const dateStr = document.getElementById('scheduleDate').value;
+            const text = cachedDayList.map(i => `${i.slotH}:00 - ${i.nextH}:00 : ${i.password}`).join('\n');
+            copyText(`LỊCH MẬT KHẨU GMOS (${dateStr})\n${text}`, 'Đã chép toàn bộ 12 ca!');
+        }
+
+        async function verifyPasswordInput() {
+            const val = document.getElementById('verifyInput').value.trim().toUpperCase();
+            const out = document.getElementById('verifyOutput');
+            if (!val) {
+                out.textContent = 'Nhập mật khẩu gồm 12 ký tự (VD: @PK043010A5@).';
+                return;
+            }
+            const m = val.match(/^@PK(\d{2})(\d{2})(\d{2})([0-9A-F]{2})@$/);
+            if (!m) {
+                out.innerHTML = '<span class="text-red-500 font-medium">❌ Sai cấu trúc @PK + Giờ + Ngày + Tháng + Checksum + @</span>';
+                return;
+            }
+            const [, slotH, day, month, sum] = m;
+            const slotNum = parseInt(slotH, 10);
+            const dayNum = parseInt(day, 10);
+            const monthNum = parseInt(month, 10);
+            const year = getVnDate().getFullYear();
+
+            if (slotNum % 2 !== 0 || slotNum > 22 || dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12) {
+                out.innerHTML = '<span class="text-red-500 font-medium">❌ Giờ ca trực (số chẵn 00-22) hoặc ngày tháng không hợp lệ.</span>';
+                return;
+            }
+
+            const expected = await buildSlotData(year, monthNum, dayNum, slotNum);
+            if (expected.checksum === sum) {
+                out.innerHTML = `<span class="text-emerald-600 dark:text-[#4ade80] font-semibold">✓ Hợp lệ:</span> Ca ${slotH}:00 – ${expected.nextH}:00 ngày ${day}/${month}/${year}.`;
+            } else {
+                out.innerHTML = `<span class="text-amber-500 font-semibold">⚠ Sai Checksum!</span> Mã đúng của ca này là <strong class="font-mono">${expected.password}</strong>`;
+            }
+        }
+
+        // =========================================================================
+        // 4. CLIPBOARD & UI UTILITIES
+        // =========================================================================
+        function copyText(text, toastMessage) {
+            const onCopied = () => showToast(toastMessage || 'Đã sao chép!');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(onCopied).catch(() => fallbackCopy(text, onCopied));
+            } else {
+                fallbackCopy(text, onCopied);
+            }
+        }
+
+        function fallbackCopy(text, callback) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                document.execCommand('copy');
+                if (callback) callback();
+            } catch (e) {}
+            document.body.removeChild(ta);
+        }
+
+        function copyPass() {
+            const pwd = document.getElementById('pwdText').textContent.trim();
+            copyText(pwd, `Đã chép: ${pwd}`);
+
+            const badge = document.getElementById('copyStatus');
+            const btnText = document.getElementById('mainBtnText');
+            badge.textContent = "Đã chép!";
+            badge.className = "text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-600 text-white transition-colors";
+            btnText.textContent = "Đã sao chép!";
+
+            setTimeout(() => {
+                badge.textContent = "Copy";
+                badge.className = "text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-100 dark:bg-[#282a2c] text-gray-600 dark:text-[#c4c7c5] transition-colors";
+                btnText.textContent = "Sao chép mật khẩu";
+            }, 1800);
+        }
+
+        function copyRawHash() {
+            if (activeData) copyText(activeData.rawPayload, 'Đã chép chuỗi Hash!');
+        }
+
+        function copySha256() {
+            if (activeData) copyText(activeData.sha, 'Đã chép mã SHA-256!');
+        }
+
+        function copyShareUrl() {
+            copyText(SHARE_URL, 'Đã chép link trang web!');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').textContent = msg;
+            t.classList.remove('opacity-0', 'translate-y-2');
+            t.classList.add('opacity-100', 'translate-y-0');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                t.classList.add('opacity-0', 'translate-y-2');
+                t.classList.remove('opacity-100', 'translate-y-0');
+            }, 2000);
+        }
+
+        function toggleDrawer() {
+            const panel = document.getElementById('drawerPanel');
+            const icon = document.getElementById('drawerIcon');
+            const btn = document.getElementById('drawerBtn');
+            const isHidden = panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !isHidden);
+            icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+            btn.setAttribute('aria-expanded', String(isHidden));
+        }
+
+        function switchTab(tab) {
+            ['slots', 'hash', 'verify'].forEach(t => {
+                const panel = document.getElementById(`tabPanel-${t}`);
+                const btn = document.getElementById(`tabBtn-${t}`);
+                if (t === tab) {
+                    panel.classList.remove('hidden');
+                    btn.className = 'flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-colors bg-[#e8f0fe] dark:bg-[#8ab4f8]/15 text-[#0b57d0] dark:text-[#8ab4f8]';
+                } else {
+                    panel.classList.add('hidden');
+                    btn.className = 'flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-colors text-gray-500 dark:text-[#9aa0a6] hover:bg-gray-200/50 dark:hover:bg-[#282a2c]';
+                }
+            });
+        }
+
+        function toggleTheme() {
+            const root = document.documentElement;
+            const isDark = root.classList.toggle('dark');
+            try {
+                localStorage.setItem('gmos_theme', isDark ? 'dark' : 'light');
+            } catch (e) {}
+        }
+
+        // Keyboard shortcut: Space or C to copy
+        window.addEventListener('keydown', (e) => {
+            const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (tag === 'input' || tag === 'textarea') return;
+            if (e.code === 'Space' || (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey)) {
+                e.preventDefault();
+                copyPass();
+            }
+        });
+
+        // Start automatically
+        window.addEventListener('DOMContentLoaded', () => {
+            generatePassword(true);
+            setInterval(() => generatePassword(false), 1000);
+        });
+    </script>
 </body>
 </html>
